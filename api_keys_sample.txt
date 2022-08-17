@@ -1,0 +1,1 @@
+{"App":"RegisteredAppNameHere","Key":"FlickrKeyHere","Secret":"FlickrSecretHere"}
