@@ -12,6 +12,7 @@
 #https://stackoverflow.com/questions/41139124/how-to-download-photos-from-flickr-by-flickr-api-in-python-3
 #https://stuvel.eu/flickrapi-doc/7-util.html#walking-through-all-photos-in-a-set
 from io import DEFAULT_BUFFER_SIZE
+from msilib import MSIDBOPEN_CREATEDIRECT
 from msilib.schema import File
 from time import strftime
 import flickrapi
@@ -20,6 +21,9 @@ import pandas as pd
 from datetime import datetime
 import urllib.request
 import os
+import time
+import numpy as np
+
 
 #just hard code my flickr id for now.
 flickr_id = '95394384@N00'
@@ -29,8 +33,8 @@ path_to_photos = 'C:\\Users\\mark\\Desktop\\bulkr\\'
 # https://www.flickr.com/photos/nocklebeast/albums/72177720299591991
 # and that last bit is the id
 my_photoset_id = 72177720299591991  #750 photos
-my_photoset_id = 72177720301027838  #45 photos
-#my_photoset_id = 72177720300589225 #5 phtoos.
+#my_photoset_id = 72177720301027838  #45 photos
+my_photoset_id = 72177720300589225 #5 phtoos.
 
 #open a text file in json format with my flickr app's keys.
 path_to_file = 'M:\\python\\flickr'
@@ -121,11 +125,29 @@ print(dfPhotoSet.head())
         #use the url and urllib to download the photo
 
 dfAllPhotoDetails = pd.DataFrame()
-
+aFailedGetPhotos = []
+aFailedGetSizes = []
+nGetInfos = 0
+nPhotoSet = len(dfPhotoSet)
 for index, row in dfPhotoSet.iterrows():
     photoId = row['photoId']
-    print(photoId)
-    photoInfo = flickr.photos.getInfo(photo_id= photoId)
+    nGetInfos = nGetInfos + 1
+    print(photoId, nGetInfos, "/", nPhotoSet)
+    getInfoSuccess = 0
+    nTries = 0
+    maxTries = 5
+    while getInfoSuccess == 0 & nTries <= maxTries:
+        nTries = nTries + 1
+        try:
+            photoInfo = flickr.photos.getInfo(photo_id= photoId)  ### get info on a single photos.
+            getInfoSuccess = 1
+        except:
+            if nTries <= maxTries:
+                time.sleep(3)
+            else:
+                aFailedGetPhotos.append(photoId)
+                print("failed get photo photo_id's: ", aFailedGetPhotos)
+
     #photoInfo  is a dictionary. with various dictionaries within that too.
     #the item corresponding to the "photo" key is a dictonary with the 'dateuploaded' value we wish for.
     photoInfo_photo = photoInfo['photo']
@@ -136,7 +158,21 @@ for index, row in dfPhotoSet.iterrows():
     sMonth = FullDatePublished.strftime('%b')
     realname = photoInfo['photo']['owner']['realname']
 
-    photoSize = flickr.photos.getSizes(photo_id= photoId)
+    getSizesSuccess = 0
+    nTries = 0
+    while getSizesSuccess == 0 & nTries <= maxTries:
+        nTries = nTries + 1
+        try:
+            photoSize = flickr.photos.getSizes(photo_id= photoId) # get sizes (and urls) for a single photo
+            getSizesSuccess = 1
+        except:
+            if nTries <= maxTries:
+                time.sleep(3)
+            else:
+                aFailedGetSizes.append(photoId)
+                print("failed get sizes photo_id's: ", aFailedGetPhotos)
+
+
     #print(photoSize) #list of all the sizes available. list of json strings
     listPhotoSizes = photoSize['sizes']['size']
     #print(listPhotoSizes)
@@ -176,7 +212,6 @@ print(len(dfAllPhotoDetails))
 print(dfPhotoSet.head())
 dfFullPhotoSet = pd.merge(dfPhotoSet, dfAllPhotoDetails, on='photoId', how='inner' )
 dfFullPhotoSet.sort_values(by=['Full Publication Date','File Name of Photograph'], inplace=True)
-dfFullPhotoSet['Photograph Number'] = dfFullPhotoSet.index + 1
 
 #keep photos that are photos (not videos)
 dfFullPhotoSet = dfFullPhotoSet.loc[ dfFullPhotoSet['media'] == 'photo' ]
@@ -185,7 +220,9 @@ print(dfFullPhotoSet.tail())
 print(dfFullPhotoSet.index)
 print(dfFullPhotoSet['sMonth'])
 
-
+if len(aFailedGetPhotos) > 0 | len(aFailedGetSizes) > 0:
+    print("failed get photos photo id's: ", aFailedGetPhotos)
+    print("failed get sizes photo_id's: ", aFailedGetPhotos)
 #######################now prepare materials for submission to eco copyright office website.
 MaxTitleLength = 1990 #eco website says 1995
 
@@ -232,21 +269,72 @@ if len(sTitles) > 0:
         title_file.write(sTitles)
     #print(sTitles)
 
-kkkkkkkkkkkkkkkkkkkkkkkkkkkkk
+if len(aFailedGetPhotos) > 0 | len(aFailedGetSizes) > 0:
+    print("failed get phtotos photo id's: ", aFailedGetPhotos)
+    print("failed get sizes photo_id's: ", aFailedGetPhotos)
+
+######################let's write the speadsheet for eco copyright office here.
+#columns to keep for pretty output.
+dfPretty = dfFullPhotoSet.copy(deep=True)
+print(dfPretty.head())
+dfPretty.drop(['title', 'photoId', 'Month', 'sMonth','dateuploaded','media','url','owner','size'], axis= 1, inplace=True)
+dfPretty['Photograph Number'] = np.arange(len(dfPretty)) + 1
+
+dfPretty = dfPretty.reindex(columns=['Photograph Number', 'Title of Photograph', 'File Name of Photograph',
+                                     'Month/Year of Publication', 'Full Publication Date'])
+
+maxPretty = dfPretty.max()
+minPretty = dfPretty.min()
+minPublicationDate = minPretty['Full Publication Date']
+maxPublicationDate = maxPretty['Full Publication Date']
+
+csv_path = path_to_photos + album_title + '\\'
+#save csv file to a string, as we're going to add some special headers to the file.
+csv_data = dfPretty.to_csv(index=False, sep='\t', encoding='utf-8')
+
+#add places to put group title and case number in the excel file.
+sAllTheTitles = "title of the group registration of published photos:" + '\t' + '\n' \
+        + "This is the complete list of photgraphs for" + '\t' + "[insert case registration number here]" + '\t' + '\n' \
+        + "total number of photos: " + '\t' + str(len(dfPretty)) + '\n' \
+        + "earliest publication date: " + '\t' + minPublicationDate.strftime("%b %d %Y") + '\n' \
+        + "latest publication date: " + '\t' + maxPublicationDate.strftime("%b %d %Y") + '\n' \
+
+
+
+txt_file = sAllTheTitles + '\n\n' + csv_data
+print(txt_file)
+
+with open(csv_path + album_title + '.txt', 'w') as txtfile:
+    txtfile.write(txt_file)
+
+"""
+#could try again at some point, but this output looks ugly (number formated as text and blank lines between real lines)
+import openpyxl
+import csv
+wb = openpyxl.Workbook()
+ws = wb.active
+with open(csv_path + album_title + '.txt') as f:
+    reader = csv.reader(f, delimiter='\t')
+    for row in reader:
+        ws.append(row)
+wb.save(csv_path + album_title + '.xlsx')
+"""
 
 ############################### get photos from flickr ##############################################
 #for each photo in dfFullPhotoSet, fetch the medium sized image from flickr.com using the url
 #and save the file... and embed a few things in the exif data. skip exif for now.
 #notes on exif https://www.linkedin.com/pulse/manipulating-image-exif-data-python-natasha-kacoroski/
 
-#get and save the photos from flickr
+#get and save the photos (jpg) from flickr
+nPhotoSet = len(dfFullPhotoSet)
+nURLPhotos = 0
 for index, row in dfFullPhotoSet.iterrows():
     url = row['url']
     sFilename = row['File Name of Photograph'] + '.jpg'
-    print(url, sFilename)
+    nURLPhotos = nURLPhotos + 1
+    print(nURLPhotos, "/", nPhotoSet, url)
     destination_dir = path_to_photos + album_title + '\\' + album_title + '\\' 
     filepath = os.path.join(destination_dir, sFilename)
-    print(filepath)
     urllib.request.urlretrieve(url, filepath)
     #don't bother with additional exif for now.. the copyright/artist info is in the flickr photos.
 
@@ -258,14 +346,7 @@ for index, row in dfFullPhotoSet.iterrows():
 
 
 
-"""
-for iMonth in nPhotosPerMonth:
-    print(nPhotosPerMonth.index, iMonth)
-    month_num = nPhotosPerMonth.index
-    #datetime_object = datetime.strptime( str(month_num), "%m")
-    #month_name = datetime_object.strftime("%b")
-    #print("Short name: ",month_name)
-"""
+    
 
 
 
