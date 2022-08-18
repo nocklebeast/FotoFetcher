@@ -1,0 +1,3 @@
+my_photoset_id = 72177720299591991 #750 photos
+#my_photoset_id = 72177720301027838 #45 photos
+my_photoset_id = 72177720300589225 #5 phtoos.

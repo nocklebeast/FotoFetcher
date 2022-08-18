@@ -1,0 +1,1 @@
+{"flickr_id":"12345678@N00","path_to_photos":"C:\\Users\\me\\Desktop\\flickr\\","my_photoset_id":"72177720300589225"}
