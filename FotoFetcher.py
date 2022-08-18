@@ -1,13 +1,14 @@
 ### this python script downloads photos from a photo set/album from flickr.com and information
 # necessary for submitting an application for copyright registration with the US Copyright 
-# Office (https://eservice.eco.loc.gov/eService_enu/?SWECmd=Start) for the group of published photos.
+# Office for the group of published photos. (https://www.copyright.gov/registration/photographs/).
 #
-# A spreadsheet of titles and dates of publication is compiled for the copyright application.
-# Several text files with the titles of photos (and the number of photo titles in the file and month of 
-# publication in the filename) for the online application process are generated.
+# A spreadsheet of numbered titles, filenames, and dates of publication of photographs
+# is compiled for the copyright application. Several text files with the titles of photos 
+# (and the number of photo titles in the file and month of publication in the filename) for 
+# the online application are generated.
 #  
 
-#inputs to the program are
+# inputs to the program are
 # config.txt and api_keys.txt 
 # to be found at
 path_to_app = 'M:\\python\\flickr'
@@ -23,17 +24,17 @@ path_to_app = 'M:\\python\\flickr'
 # from the flickr url for that photo set/album.
 
 # script logic:
-#given a photoset id (just get it manually from the flickr website)
-#get a list of photos in the photo set.
-#flickr.photosets.getPhotos returns the title of the photo set and a list of photos (id's and titles)
+# given a photoset id (just get it manually from the flickr website)
+# get a list of photos in the photo set.
+# flickr.photosets.getPhotos returns the title of the photo set and a list of photos (id's and titles)
     #foreach photo id in the set
         #flickr.photos.getInfo. returns the title and unix timestamp of original upload (and other stuff)
         #flickr.photos.getSizes. get the sizes and the corresponding url of each size for each photo
             #urllib.request.urlretrieve(url, filepath) retrieves the photo from the flickr url and saves it.
 
-#info on the flickr api and python flickrapi:
-#https://stuvel.eu/software/flickrapi/
-#https://www.flickr.com/services/api/
+# info on the flickr api and python flickrapi:
+# https://stuvel.eu/software/flickrapi/
+# https://www.flickr.com/services/api/
 
 from io import DEFAULT_BUFFER_SIZE
 from msilib import MSIDBOPEN_CREATEDIRECT
@@ -58,6 +59,7 @@ filename = 'config.txt'
 with open(path_to_app + '\\' + filename, 'r') as file:
     line = file.readline()
 config = json.loads(line)
+#https://www.flickr.com/services/api/explore/flickr.urls.lookupUser # one way to find flickr id.
 flickr_id = config['flickr_id']
 path_to_photos = config['path_to_photos']
 my_photoset_id = config['my_photoset_id']
@@ -204,7 +206,15 @@ for index, row in dfPhotoSet.iterrows():
     dfDesiredSize = dfPhotoSizes.loc[ dfPhotoSizes['label'] == 'Medium 800' ]
     sSizeLabel = '_m'
     # if the original size is too small so that a medium photos (width 800 pixels) doesn't exist
-    # the original size will always exist. Get that instead.
+    # older photos won't have the 800 size.... try 640 instead.... then try original size.
+    if len(dfDesiredSize) == 0 :
+        dfDesiredSize = dfPhotoSizes.loc[ dfPhotoSizes['label'] == 'Medium 640' ]
+        sSizeLabel = '_m'   
+    #500 size even older than 640 in flickr history.
+    if len(dfDesiredSize) == 0 :
+        dfDesiredSize = dfPhotoSizes.loc[ dfPhotoSizes['label'] == 'Medium' ]
+        sSizeLabel = '_m'   
+    # the original size may always exist. Get that instead.
     if len(dfDesiredSize) == 0 :
         dfDesiredSize = dfPhotoSizes.loc[ dfPhotoSizes['label'] == 'Original' ]
         sSizeLabel = '_o'
@@ -227,7 +237,6 @@ for index, row in dfPhotoSet.iterrows():
     #print(dfMyPhoto)
 
 #print(dfAllPhotoDetails.head())
-#print(len(dfAllPhotoDetails))
 
 #merge with dfPhotoSet, to make sure all the photos are public (dfPhotoSet has private photos weeded out)
 #print(dfPhotoSet.head())
@@ -236,8 +245,7 @@ dfFullPhotoSet.sort_values(by=['Full Publication Date','File Name of Photograph'
 
 #keep photos that are photos (not videos)
 dfFullPhotoSet = dfFullPhotoSet.loc[ dfFullPhotoSet['media'] == 'photo' ]
-print(dfFullPhotoSet.head())
-#print(dfFullPhotoSet.tail())
+print(dfFullPhotoSet.tail())
 
 if len(aFailedGetPhotos) > 0 | len(aFailedGetSizes) > 0:
     print("failed get photos photo id's: ", aFailedGetPhotos)
@@ -245,7 +253,6 @@ if len(aFailedGetPhotos) > 0 | len(aFailedGetSizes) > 0:
 
 ####################### now prepare materials for submission to eco U.S. copyright office website.  ####
 MaxTitleLength = 1990 #eco website says 1995
-
 #make spreadsheet
 #make titles files.
 sTitles = ""
@@ -267,11 +274,9 @@ for index, row in dfFullPhotoSet.iterrows():
         FileName = album_title + '_' + str(nTitlesFiles).zfill(3) + '_' 
         FileName = FileName + str(last_num_month).zfill(2) + lastMonth + '_'
         FileName = FileName + str(nPhotos).zfill(3) + '_photos.txt'
-        #print(FileName)
         destination_dir = path_to_photos + album_title + '\\' 
         with open( destination_dir + FileName, 'w') as title_file:
             title_file.write(sTitles)
-        #print(sTitles)
         #reset sTitles. with current row.
         sTitles = "" + row['Title of Photograph'] + ", \n"
         nPhotos = 1
@@ -282,11 +287,9 @@ if len(sTitles) > 0:
     FileName = album_title + '_' + str(nTitlesFiles).zfill(3) + '_' 
     FileName = FileName + str(current_num_month).zfill(2) + currentMonth + '_'
     FileName = FileName + str(nPhotos).zfill(3) + '_photos.txt'
-    #print(FileName)
     destination_dir = path_to_photos + album_title + '\\' 
     with open( destination_dir + FileName, 'w') as title_file:
         title_file.write(sTitles)
-    #print(sTitles)
 
 if len(aFailedGetPhotos) > 0 | len(aFailedGetSizes) > 0:
     print("failed get phtotos photo id's: ", aFailedGetPhotos)
@@ -308,8 +311,13 @@ minPublicationDate = minPretty['Full Publication Date']
 maxPublicationDate = maxPretty['Full Publication Date']
 
 csv_path = path_to_photos + album_title + '\\'
-#save csv file to a string, as we're going to add some special headers to the file.
-csv_data = dfPretty.to_csv(index=False, sep='\t', encoding='utf-8')
+#save csv as text file.  This doesn't have extra line feeds in the file.
+dfPretty.to_csv(csv_path + 'raw csv data' + '.txt', index=False, sep='\t', encoding='utf-8')
+with open(csv_path + 'raw csv data' + '.txt', 'r') as txtfile:
+    csv_data = txtfile.read()
+
+### for some reason this method to get csv_data produces extra line feeds, and looks icky.
+#csv_data = dfPretty.to_csv(index=False, sep='\t', encoding='utf-8')
 
 #add places to put group title and case registration number from the copyright office in the excel file.
 sAllTheTitles = "title of the group registration of published photos:" + '\t' + '\n' \
@@ -318,14 +326,11 @@ sAllTheTitles = "title of the group registration of published photos:" + '\t' + 
         + "earliest publication date: " + '\t' + minPublicationDate.strftime("%b %d %Y") + '\n' \
         + "latest publication date: " + '\t' + maxPublicationDate.strftime("%b %d %Y") + '\n' \
 
-txt_file = sAllTheTitles + '\n\n' + csv_data
-
+finished_spreadsheet = sAllTheTitles + '\n\n' + csv_data
 with open(csv_path + album_title + '.txt', 'w') as txtfile:
-    txtfile.write(txt_file)
+    txtfile.write(finished_spreadsheet)
 
-"""
-#could try again at some point, but this output looks ugly (number formated as text and blank lines between real lines)
-#maybe try cell by cell copy from csv to excel instead of by rows??????
+#convert finished_spreadsheet text file into an xlsx file.
 import openpyxl
 import csv
 wb = openpyxl.Workbook()
@@ -335,7 +340,14 @@ with open(csv_path + album_title + '.txt') as f:
     for row in reader:
         ws.append(row)
 wb.save(csv_path + album_title + '.xlsx')
-"""
+
+### remove temp txt files.
+remove_me = csv_path + 'raw csv data' + '.txt'
+if os.path.exists(remove_me):
+  os.remove(remove_me)
+remove_me = csv_path + album_title + '.txt'
+if os.path.exists(remove_me):
+  os.remove(remove_me)
 
 ############################### get photos from flickr ##############################################
 #for each photo in dfFullPhotoSet, fetch the medium sized image from flickr.com using the url
