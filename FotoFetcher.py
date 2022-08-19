@@ -1,12 +1,16 @@
-### this python script downloads photos from a photo set/album from flickr.com and information
-# necessary for submitting an application for copyright registration with the US Copyright 
-# Office for the group of published photos. (https://www.copyright.gov/registration/photographs/).
-#
-# A spreadsheet of numbered titles, filenames, and dates of publication of photographs
-# is compiled for the copyright application. Several text files with the titles of photos 
-# (and the number of photo titles in the file and month of publication in the filename) for 
-# the online application are generated.
-#  
+"""
+This python script downloads photos from a photo set/album from flickr.com 
+and the information necessary for submitting an application for copyright 
+registration with the US Copyright Office for the group of published 
+photos. (https://www.copyright.gov/registration/photographs/).
+
+A spreadsheet of numbered titles, filenames, and dates of publication 
+of photographs is compiled for the copyright application. Several text 
+files with the titles of photos (and the number of photo titles in the 
+file and the month of publication in the filename) for the online 
+application are generated.
+
+"""
 
 # inputs to the program are
 # config.txt and api_keys.txt 
@@ -23,6 +27,10 @@ path_to_app = 'M:\\python\\flickr'
 # flickr_id is the user's flickr id.  The flickr photo set id may be obtained 
 # from the flickr url for that photo set/album.
 
+# info on the flickr api and python flickrapi:
+# https://stuvel.eu/software/flickrapi/
+# https://www.flickr.com/services/api/
+
 # script logic:
 # given a photoset id (just get it manually from the flickr website)
 # get a list of photos in the photo set.
@@ -31,10 +39,6 @@ path_to_app = 'M:\\python\\flickr'
         #flickr.photos.getInfo. returns the title and unix timestamp of original upload (and other stuff)
         #flickr.photos.getSizes. get the sizes and the corresponding url of each size for each photo
             #urllib.request.urlretrieve(url, filepath) retrieves the photo from the flickr url and saves it.
-
-# info on the flickr api and python flickrapi:
-# https://stuvel.eu/software/flickrapi/
-# https://www.flickr.com/services/api/
 
 from io import DEFAULT_BUFFER_SIZE
 from msilib import MSIDBOPEN_CREATEDIRECT
