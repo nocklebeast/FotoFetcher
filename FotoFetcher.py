@@ -269,7 +269,7 @@ last_num_month = dfFullPhotoSet.loc[0]['Month']
 for index, row in dfFullPhotoSet.iterrows():
     currentMonth = row['sMonth']
     current_num_month = row['Month']
-    if (len(sTitles) + len(row['Title of Photograph']) < MaxTitleLength) | (lastMonth != currentMonth):
+    if (len(sTitles) + len(row['Title of Photograph']) < MaxTitleLength) and (lastMonth == currentMonth):
         sTitles = sTitles + row['Title of Photograph'] + ", \n"
         nPhotos = nPhotos + 1
     else:
@@ -284,12 +284,14 @@ for index, row in dfFullPhotoSet.iterrows():
         #reset sTitles. with current row.
         sTitles = "" + row['Title of Photograph'] + ", \n"
         nPhotos = 1
+    lastMonth = currentMonth
+    last_num_month = current_num_month 
 
 #get last titles that didn't run out of month or space, if it exists.
 if len(sTitles) > 0:
     nTitlesFiles = nTitlesFiles + 1
     FileName = album_title + '_' + str(nTitlesFiles).zfill(3) + '_' 
-    FileName = FileName + str(current_num_month).zfill(2) + currentMonth + '_'
+    FileName = FileName + str(last_num_month).zfill(2) + lastMonth + '_'
     FileName = FileName + str(nPhotos).zfill(3) + '_photos.txt'
     destination_dir = path_to_photos + album_title + '\\' 
     with open( destination_dir + FileName, 'w') as title_file:
