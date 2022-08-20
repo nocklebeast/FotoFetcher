@@ -317,11 +317,14 @@ maxPublicationDate = maxPretty['Full Publication Date']
 csv_path = path_to_photos + album_title + '\\'
 #save csv as text file.  This doesn't have extra line feeds in the file.
 dfPretty.to_csv(csv_path + 'raw csv data' + '.txt', index=False, sep='\t', encoding='utf-8')
-with open(csv_path + 'raw csv data' + '.txt', 'r') as txtfile:
+with open(csv_path + 'raw csv data' + '.txt', 'r', encoding='utf8') as txtfile:
     csv_data = txtfile.read()
 
+#print(csv_data)
 ### for some reason this method to get csv_data produces extra line feeds, and looks icky.
 #csv_data = dfPretty.to_csv(index=False, sep='\t', encoding='utf-8')
+#print(csv_data)
+
 
 #add places to put group title and case registration number from the copyright office in the excel file.
 sAllTheTitles = "title of the group registration of published photos:" + '\t' + '\n' \
@@ -334,6 +337,8 @@ finished_spreadsheet = sAllTheTitles + '\n\n' + csv_data
 with open(csv_path + album_title + '.txt', 'w') as txtfile:
     txtfile.write(finished_spreadsheet)
 
+#print(finished_spreadsheet)
+
 #convert finished_spreadsheet text file into an xlsx file.
 import openpyxl
 import csv
@@ -345,6 +350,7 @@ with open(csv_path + album_title + '.txt') as f:
         ws.append(row)
 wb.save(csv_path + album_title + '.xlsx')
 
+
 ### remove temp txt files.
 remove_me = csv_path + 'raw csv data' + '.txt'
 if os.path.exists(remove_me):
@@ -352,6 +358,7 @@ if os.path.exists(remove_me):
 remove_me = csv_path + album_title + '.txt'
 if os.path.exists(remove_me):
   os.remove(remove_me)
+
 
 ############################### get photos from flickr ##############################################
 #for each photo in dfFullPhotoSet, fetch the medium sized image from flickr.com using the url
