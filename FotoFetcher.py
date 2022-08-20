@@ -229,7 +229,7 @@ for index, row in dfPhotoSet.iterrows():
     sFilename = row['title'] + '_' + str(photoId) + sSizeLabel
     # strip file name of any weird characters.
     sFilename.strip() #trim whitepace
-    badCharacters = ['<', '>', ':', '"', '\/', '\\', '|', '?', '*']
+    badCharacters = ['<', '>', ':', '"', '/', '\\', '|', '?', '*']
     for badCh in badCharacters:
         sFilename = sFilename.replace(badCh,'')
     
@@ -251,9 +251,7 @@ dfFullPhotoSet.sort_values(by=['Full Publication Date','File Name of Photograph'
 dfFullPhotoSet = dfFullPhotoSet.loc[ dfFullPhotoSet['media'] == 'photo' ]
 print(dfFullPhotoSet.tail())
 
-if len(aFailedGetPhotos) > 0 | len(aFailedGetSizes) > 0:
-    print("failed get photos photo id's: ", aFailedGetPhotos)
-    print("failed get sizes photo_id's: ", aFailedGetPhotos)
+
 
 ####################### now prepare materials for submission to eco U.S. copyright office website.  ####
 MaxTitleLength = 1990 #eco website says 1995
@@ -373,6 +371,31 @@ for index, row in dfFullPhotoSet.iterrows():
     nURLPhotos = nURLPhotos + 1
     print(nURLPhotos, "/", nPhotoSet, url)
     filepath = os.path.join(destination_dir, sFilename)
-    urllib.request.urlretrieve(url, filepath)
+
+    #urllib.request.urlretrieve(url, filepath)
+    aFailedSaveJPGs = []
+    saveJPGSuccess = 0
+    nTries = 0
+    maxTries = 5
+    while saveJPGSuccess == 0 & nTries <= maxTries:
+        nTries = nTries + 1
+        try:
+            urllib.request.urlretrieve(url, filepath)
+            saveJPGSuccess = 1
+        except:
+            if nTries <= maxTries:
+                time.sleep(3)
+            else:
+                aFailedSaveJPGs.append(sFilename)
+                print("failed get jpgs filename's: ", aFailedSaveJPGs)
     #don't bother with additional exif for now.. the copyright/artist info is in the flickr photos.
 
+
+if len(aFailedGetPhotos) > 0:
+    print("failed get photos photo id's: ", aFailedGetPhotos)
+
+if len(aFailedGetSizes) > 0:
+    print("failed get sizes photo_id's: ", aFailedGetPhotos)
+
+if len(aFailedSaveJPGs) > 0:
+    print("failed get jpgs filename's: ", aFailedSaveJPGs)
