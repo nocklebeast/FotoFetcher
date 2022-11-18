@@ -328,7 +328,7 @@ with open(csv_path + 'raw csv data' + '.txt', 'r', encoding='utf8') as txtfile:
 
 #add places to put group title and case registration number from the copyright office in the excel file.
 sAllTheTitles = "title of the group registration of published photos:" + '\t' + '\n' \
-        + "This is the complete list of photgraphs for" + '\t' + "[insert case registration number here]" + '\t' + '\n' \
+        + "This is the complete list of photgraphs for" + '\t' + "[insert case registration number here, remember to place # in file name.]" + '\t' + '\n' \
         + "total number of photos: " + '\t' + str(len(dfPretty)) + '\n' \
         + "earliest publication date: " + '\t' + minPublicationDate.strftime("%b %d %Y") + '\n' \
         + "latest publication date: " + '\t' + maxPublicationDate.strftime("%b %d %Y") + '\n' \
